@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Para ti 🌻</title>
+<style>
+  :root{
+    --paper:#eeeae3;
+    --ink:#171513;
+    --yellow:#f7c51d;
+    --yellow2:#ffd84a;
+    --brown:#7a421f;
+  }
+  *{box-sizing:border-box}
+  html,body{
+    margin:0;width:100%;height:100%;overflow:hidden;
+    background:var(--paper);color:var(--ink);
+    font-family:Georgia,"Times New Roman",serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #scene{
+    position:fixed;inset:0;width:100%;height:100%;display:block;
+    cursor:pointer;
+  }
+  .grain{
+    position:fixed;inset:-50%;pointer-events:none;opacity:.14;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.25'/%3E%3C/svg%3E");
+  }
+  .ui{
+    position:fixed;inset:0;pointer-events:none;
+    display:flex;flex-direction:column;align-items:center;
+    padding:clamp(28px,7vh,80px) 18px 22px;
+  }
+  .title{
+    margin:0;text-align:center;font-weight:400;font-size:clamp(34px,6vw,62px);
+    line-height:1.05;letter-spacing:-.03em;
+    opacity:0;transform:translateY(-8px);
+    transition:opacity .8s ease,transform .8s ease;
+  }
+  .title.show{opacity:1;transform:none}
+  .subtitle{
+    margin-top:10px;font-size:clamp(14px,2vw,19px);letter-spacing:.08em;
+    opacity:0;transition:opacity .8s ease .25s;
+  }
+  .subtitle.show{opacity:.65}
+  .start{
+    pointer-events:auto;position:absolute;bottom:7vh;
+    border:1px solid rgba(30,25,20,.25);background:rgba(255,255,255,.55);
+    color:#171513;border-radius:999px;padding:13px 22px;
+    font:600 14px/1 Georgia,"Times New Roman",serif;
+    box-shadow:0 8px 25px rgba(50,40,25,.12);
+    cursor:pointer;backdrop-filter:blur(7px);
+    transition:transform .25s ease,opacity .4s ease;
+  }
+  .start:hover{transform:translateY(-2px)}
+  .start.hide{opacity:0;pointer-events:none}
+  .hint{
+    position:absolute;bottom:4.5vh;font-size:12px;letter-spacing:.08em;
+    opacity:0;transition:opacity .8s ease 1.5s;
+  }
+  .hint.show{opacity:.42}
+  .replay{
+    pointer-events:auto;position:absolute;right:18px;bottom:18px;
+    border:1px solid rgba(30,25,20,.18);background:rgba(255,255,255,.45);
+    border-radius:50%;width:42px;height:42px;cursor:pointer;
+    font-size:18px;opacity:0;transition:opacity .5s ease,transform .2s ease;
+  }
+  .replay.show{opacity:1}
+  .replay:hover{transform:rotate(-25deg)}
+  @media(max-width:600px){
+    .ui{padding-top:6vh}
+    .title{font-size:38px}
+  }
+  #food{
+    position:fixed; left:12vw; top:50%; z-index:20;
+    width:72px;height:72px;display:flex;align-items:center;justify-content:center;
+    font-size:42px;cursor:grab;user-select:none;touch-action:none;
+    filter:drop-shadow(0 8px 10px rgba(50,40,25,.16));
+    transition:transform .18s ease,opacity .35s ease;
+  }
+  #food:active{cursor:grabbing;transform:scale(1.08)}
+  #food.hide{opacity:0;pointer-events:none;transform:scale(1.5)}
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div class="grain"></div>
+
+<div class="ui">
+  <h1 id="title" class="title">Ten, son para ti 🌻</h1>
+  <div id="subtitle" class="subtitle">🌻</div>
+  <button id="start" class="start">Tócame 🌻</button>
+  <div id="hint" class="hint">toca la pantalla para repetir el momento</div>
+  <button id="replay" class="replay" aria-label="Repetir">↻</button>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById("scene");
+  const ctx = canvas.getContext("2d");
+  const replayBtn = document.getElementById("replay");
+  const title = document.getElementById("title");
+  const subtitle = document.getElementById("subtitle");
+  const hint = document.getElementById("hint");
+  const food = document.getElementById("food");
+
+  let W=0,H=0,DPR=1;
+  let started=false, startTime=0, last=0;
+  let feeding=false, exploded=false, foodX=0, foodY=0;
+  let flip=0;                 // 0 = espalda, 1 = frente
+  let bouquetProgress=0;
+  let message=0;
+  let floatT=0;
+  let petals=[];
+  let sparkles=[];
+  let audio=null;
+
+  function resize(){
+    DPR=Math.min(2,window.devicePixelRatio||1);
+    W=innerWidth; H=innerHeight;
+    canvas.width=W*DPR; canvas.height=H*DPR;
+    canvas.style.width=W+"px"; canvas.style.height=H+"px";
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  addEventListener("resize",resize);
+  resize();
+
+  // ---------- Audio suave, sin archivos externos ----------
+  function makeAudio(){
+    try{
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC) return;
+      audio=new AC();
+    }catch(e){}
+  }
+  function chime(){
+    if(!audio) return;
+    if(audio.state==="suspended") audio.resume();
+    const now=audio.currentTime;
+    [523.25,659.25,783.99].forEach((f,i)=>{
+      const o=audio.createOscillator(), g=audio.createGain();
+      o.type="sine"; o.frequency.value=f;
+      g.gain.setValueAtTime(0,now+i*.07);
+      g.gain.linearRampToValueAtTime(.035,now+i*.07+.05);
+      g.gain.exponentialRampToValueAtTime(.0001,now+i*.07+1.7);
+      o.connect(g);g.connect(audio.destination);
+      o.start(now+i*.07);o.stop(now+i*.07+1.8);
+    });
+  }
+
+  // ---------- Helpers ----------
+  const ease = t => t<.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+  const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+  const lerp=(a,b,t)=>a+(b-a)*t;
+
+  function roundedRect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+  }
+
+  function ellipse(x,y,rx,ry,fill,stroke=null,lw=1){
+    ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);
+    if(fill){ctx.fillStyle=fill;ctx.fill()}
+    if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}
+  }
+
+  function line(points, color, width=1){
+    ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);
+    for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);
+    ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap="round";ctx.stroke();
+  }
+
+  // ---------- Fondo papel ----------
+  function drawBackground(){
+    ctx.fillStyle="#eeeae3";ctx.fillRect(0,0,W,H);
+    const g=ctx.createRadialGradient(W*.5,H*.47,0,W*.5,H*.47,Math.max(W,H)*.7);
+    g.addColorStop(0,"rgba(255,255,255,.58)");
+    g.addColorStop(1,"rgba(215,209,200,.22)");
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+
+    // sombra de suelo
+    ctx.save();
+    ctx.globalAlpha=.12;
+    ctx.filter="blur(16px)";
+    ellipse(W*.5,H*.84,Math.min(W,H)*.18,Math.min(W,H)*.028,"#5c4b3c");
+    ctx.restore();
+    ctx.filter="none";
+  }
+
+  // ---------- Partículas amarillas tipo pétalos ----------
+  function seedPetals(){
+    petals=[];
+    for(let i=0;i<28;i++){
+      petals.push({
+        x:Math.random()*W,y:H*.2+Math.random()*H*.65,
+        s:2+Math.random()*4, a:Math.random()*Math.PI,
+        vx:(Math.random()-.5)*.18,vy:.12+Math.random()*.28,
+        rot:Math.random()*Math.PI
+      });
+    }
+  }
+  seedPetals();
+
+  function drawPetals(dt){
+    for(const p of petals){
+      p.y+=p.vy*dt*60;p.x+=p.vx*dt*60;p.rot+=.012*dt*60;
+      if(p.y>H+20){p.y=-10;p.x=Math.random()*W}
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+      ctx.globalAlpha=.72;
+      ctx.beginPath();
+      ctx.moveTo(0,-p.s*2);ctx.quadraticCurveTo(p.s*2,0,0,p.s*2);
+      ctx.quadraticCurveTo(-p.s*2,0,0,-p.s*2);
+      ctx.fillStyle="#f4b915";ctx.fill();ctx.restore();
+    }
+    ctx.globalAlpha=1;
+  }
+
+  // ---------- Flores ----------
+  function sunflower(x,y,s){
+    ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+    for(let i=0;i<20;i++){
+      const a=i*Math.PI*2/20;
+      ctx.save();ctx.rotate(a);
+      ctx.beginPath();
+      ctx.moveTo(0,-7);ctx.bezierCurveTo(-7,-23,-7,-31,0,-36);
+      ctx.bezierCurveTo(7,-31,7,-23,0,-7);
+      const pg=ctx.createLinearGradient(0,-7,0,-36);
+      pg.addColorStop(0,"#e8a90d");pg.addColorStop(.55,"#f7c51d");pg.addColorStop(1,"#ffe36a");
+      ctx.fillStyle=pg;ctx.fill();ctx.restore();
+    }
+    ellipse(0,0,14,14,"#6b3518");
+    for(let i=0;i<28;i++){
+      const a=i*2.399963;const r=2+Math.sqrt(i/28)*10;
+      ellipse(Math.cos(a)*r,Math.sin(a)*r,1.2,1.2,i%2?"#9a571f":"#4e2715");
+    }
+    ctx.restore();
+  }
+
+  function smallFlower(x,y,s,petal="#f6c526"){
+    ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+    for(let i=0;i<8;i++){
+      ctx.save();ctx.rotate(i*Math.PI/4);
+      ellipse(0,-7,3.2,7,petal);
+      ctx.restore();
+    }
+    ellipse(0,0,3.2,3.2,"#754018");
+    ctx.restore();
+  }
+
+  function leaf(x,y,s,rot){
+    ctx.save();ctx.translate(x,y);ctx.rotate(rot);ctx.scale(s,s);
+    ctx.beginPath();ctx.moveTo(0,0);ctx.bezierCurveTo(16,-12,25,-10,31,0);
+    ctx.bezierCurveTo(22,12,10,14,0,0);ctx.fillStyle="#557047";ctx.fill();
+    ctx.strokeStyle="rgba(48,68,37,.45)";ctx.lineWidth=1;ctx.stroke();
+    line([[2,0],[27,0]],"rgba(35,55,28,.4)",1);
+    ctx.restore();
+  }
+
+  function bouquet(x,y,s){
+    ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+
+    // hojas traseras
+    leaf(-74,16,1,-.55);leaf(72,18,1,.55);leaf(-55,-42,.85,-.85);leaf(55,-45,.85,.85);
+    leaf(-20,-55,.72,-.2);leaf(22,-55,.72,.2);
+
+    // tallos
+    for(let i=-4;i<=4;i++) line([[i*5,65],[i*7,165]],i%2?"#426034":"#354e2b",2);
+
+    // flores secundarias
+    smallFlower(-66,8,.85,"#ffd84a");
+    smallFlower(67,10,.9,"#f6c526");
+    smallFlower(-52,-42,.7,"#ffe36a");
+    smallFlower(50,-43,.72,"#f5c11c");
+    smallFlower(-29,-67,.62,"#ffe36a");
+    smallFlower(30,-67,.62,"#ffd84a");
+
+    // flor protagonista
+    sunflower(0,0,1.35);
+
+    // papel kraft
+    ctx.beginPath();
+    ctx.moveTo(-72,58);ctx.lineTo(-36,22);ctx.lineTo(0,70);ctx.lineTo(36,22);ctx.lineTo(72,58);
+    ctx.lineTo(43,124);ctx.lineTo(0,150);ctx.lineTo(-43,124);ctx.closePath();
+    const kg=ctx.createLinearGradient(-70,50,70,130);
+    kg.addColorStop(0,"#b87945");kg.addColorStop(.5,"#d6a06b");kg.addColorStop(1,"#a76538");
+    ctx.fillStyle=kg;ctx.fill();
+    ctx.strokeStyle="rgba(94,52,28,.45)";ctx.lineWidth=1;ctx.stroke();
+
+    // pliegues del papel
+    line([[-65,58],[0,110],[65,58]],"rgba(100,57,30,.38)",1);
+    line([[-40,120],[0,72],[40,120]],"rgba(255,235,205,.32)",1);
+
+    // cordón
+    ctx.beginPath();ctx.arc(0,91,31,0,Math.PI*2);ctx.strokeStyle="#7b431f";ctx.lineWidth=4;ctx.stroke();
+    line([[-30,91],[-48,78]],"#7b431f",3);line([[30,91],[48,78]],"#7b431f",3);
+
+    // moño
+    ellipse(-24,92,20,11,"#7f4824","#5d321a",1);
+    ellipse(24,92,20,11,"#7f4824","#5d321a",1);
+    ellipse(0,92,8,8,"#6b381c");
+    ctx.beginPath();ctx.moveTo(-2,99);ctx.lineTo(-18,139);ctx.lineTo(-6,134);ctx.lineTo(2,99);ctx.fillStyle="#8b4b23";ctx.fill();
+    ctx.beginPath();ctx.moveTo(2,99);ctx.lineTo(18,139);ctx.lineTo(6,134);ctx.lineTo(-2,99);ctx.fillStyle="#a65f31";ctx.fill();
+
+    ctx.restore();
+  }
+
+  // ---------- Gatito ----------
+  function drawCharacter(front, t){
+    const scale=Math.min(W,H)/620;
+    const cx=W*.5;
+    const cy=H*.57 + Math.sin(t*1.4)*4;
+    const bodyW=92*scale, bodyH=125*scale;
+
+    // sombra
+    ctx.save();
+    ctx.globalAlpha=.15;
+    ctx.filter="blur(9px)";
+    ellipse(cx,cy+bodyH*.88,bodyW*.78,12*scale,"#5c493a");
+    ctx.restore();
+    ctx.filter="none";
+
+    // giro 3D: 0 espalda / 1 frente
+    const rot=lerp(Math.PI,0,ease(front));
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.scale(Math.cos(rot),1);
+
+    // cola, visible principalmente de espaldas
+    ctx.strokeStyle="#8a5a39";
+    ctx.lineWidth=13*scale;
+    ctx.lineCap="round";
+    ctx.beginPath();
+    ctx.moveTo(68*scale,48*scale);
+    ctx.bezierCurveTo(115*scale,35*scale,118*scale,-15*scale,88*scale,-30*scale);
+    ctx.stroke();
+
+    // cuerpo
+    const fur=ctx.createRadialGradient(-25*scale,-45*scale,8*scale,0,20*scale,bodyH);
+    fur.addColorStop(0,"#f0c89e");
+    fur.addColorStop(.72,"#8a5a3c");
+    fur.addColorStop(1,"#8d5a39");
+    ctx.beginPath();
+    ctx.ellipse(0,28*scale,bodyW*.78,bodyH*.86,0,0,Math.PI*2);
+    ctx.fillStyle=fur;
+    ctx.fill();
+    ctx.strokeStyle="#70462f";
+    ctx.lineWidth=2*scale;
+    ctx.stroke();
+
+    // patas
+    ellipse(-40*scale,105*scale,18*scale,13*scale,"#70462f");
+    ellipse(40*scale,105*scale,18*scale,13*scale,"#70462f");
+
+    if(front){
+      // brazos abrazando el ramo
+      line([[-63*scale,28*scale],[-42*scale,63*scale],[-20*scale,88*scale]],"#70462f",11*scale);
+      line([[63*scale,28*scale],[42*scale,63*scale],[20*scale,88*scale]],"#70462f",11*scale);
+      ellipse(-19*scale,86*scale,10*scale,8*scale,"#70462f");
+      ellipse(19*scale,86*scale,10*scale,8*scale,"#70462f");
+
+      // cabeza
+      ctx.fillStyle="#9b6b45";
+      ctx.beginPath();
+      ctx.ellipse(0,-54*scale,76*scale,64*scale,0,0,Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle="#70462f";
+      ctx.lineWidth=2*scale;
+      ctx.stroke();
+
+      // orejas
+      ctx.beginPath();
+      ctx.moveTo(-62*scale,-83*scale);
+      ctx.lineTo(-48*scale,-135*scale);
+      ctx.lineTo(-15*scale,-101*scale);
+      ctx.closePath();
+      ctx.fillStyle="#8a5a3c";
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(62*scale,-83*scale);
+      ctx.lineTo(48*scale,-135*scale);
+      ctx.lineTo(15*scale,-101*scale);
+      ctx.closePath();
+      ctx.fillStyle="#8a5a3c";
+      ctx.fill();
+      ctx.stroke();
+
+      // interior de orejas
+      ctx.beginPath();
+      ctx.moveTo(-53*scale,-94*scale);ctx.lineTo(-47*scale,-119*scale);ctx.lineTo(-29*scale,-101*scale);ctx.closePath();
+      ctx.fillStyle="#e7a39a";ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(53*scale,-94*scale);ctx.lineTo(47*scale,-119*scale);ctx.lineTo(29*scale,-101*scale);ctx.closePath();
+      ctx.fill();
+
+      // ojos
+      ctx.save();
+      ctx.rotate(-.12);
+      ellipse(-27*scale,-57*scale,5*scale,8*scale,"#171513");
+      ctx.restore();
+      ctx.save();
+      ctx.rotate(.12);
+      ellipse(27*scale,-57*scale,5*scale,8*scale,"#171513");
+      ctx.restore();
+      ellipse(-29*scale,-60*scale,2.2*scale,2.8*scale,"#fff");
+      ellipse(25*scale,-60*scale,2.2*scale,2.8*scale,"#fff");
+
+      // mejillas
+      ellipse(-42*scale,-39*scale,10*scale,6*scale,"rgba(120,75,55,.18)");
+      ellipse(42*scale,-39*scale,10*scale,6*scale,"rgba(120,75,55,.18)");
+
+      // hocico, nariz y sonrisa
+      ellipse(-12*scale,-34*scale,12*scale,9*scale,"#edc39f");
+      ellipse(12*scale,-34*scale,12*scale,9*scale,"#edc39f");
+      ellipse(0,-37*scale,5*scale,4*scale,"#6d3827");
+      ctx.beginPath();
+      ctx.moveTo(0,-33*scale);
+      ctx.quadraticCurveTo(-5*scale,-24*scale,-12*scale,-26*scale);
+      ctx.moveTo(0,-33*scale);
+      ctx.quadraticCurveTo(5*scale,-24*scale,12*scale,-26*scale);
+      ctx.strokeStyle="#6d3827";
+      ctx.lineWidth=2*scale;
+      ctx.stroke();
+
+      // bigotes
+      line([[-18*scale,-35*scale],[-58*scale,-43*scale]],"#70462f",1.5*scale);
+      line([[-18*scale,-30*scale],[-60*scale,-30*scale]],"#70462f",1.5*scale);
+      line([[18*scale,-35*scale],[58*scale,-43*scale]],"#70462f",1.5*scale);
+      line([[18*scale,-30*scale],[60*scale,-30*scale]],"#70462f",1.5*scale);
+
+      // pequeño mechón
+      line([[-10*scale,-112*scale],[-18*scale,-126*scale]],"#70462f",2*scale);
+      line([[0,-115*scale],[0,-130*scale]],"#70462f",2*scale);
+      line([[10*scale,-112*scale],[18*scale,-126*scale]],"#70462f",2*scale);
+    }else{
+      // cabeza de espaldas
+      ctx.fillStyle="#8a5a3c";
+      ctx.beginPath();
+      ctx.ellipse(0,-54*scale,76*scale,64*scale,0,0,Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle="#70462f";
+      ctx.lineWidth=2*scale;
+      ctx.stroke();
+
+      // orejas de espalda
+      ctx.beginPath();
+      ctx.moveTo(-63*scale,-82*scale);
+      ctx.lineTo(-48*scale,-136*scale);
+      ctx.lineTo(-13*scale,-102*scale);
+      ctx.closePath();
+      ctx.fillStyle="#70462f";ctx.fill();ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(63*scale,-82*scale);
+      ctx.lineTo(48*scale,-136*scale);
+      ctx.lineTo(13*scale,-102*scale);
+      ctx.closePath();
+      ctx.fillStyle="#70462f";ctx.fill();ctx.stroke();
+
+      // rayas del lomo/cabeza
+      for(let i=-2;i<=2;i++){
+        line([[i*16*scale,-105*scale],[i*20*scale,-65*scale]],"rgba(92,54,35,.48)",3*scale);
+      }
+      // brazos hacia atrás
+      line([[-63*scale,28*scale],[-42*scale,65*scale],[-20*scale,88*scale]],"#5f3d2b",11*scale);
+      line([[63*scale,28*scale],[42*scale,65*scale],[20*scale,88*scale]],"#5f3d2b",11*scale);
+    }
+
+    ctx.restore();
+
+    // El ramo se conserva exactamente con el diseño original.
+    if(front){
+      const p=clamp((front-.34)/.66);
+      bouquet(cx,cy+58*scale,scale*(.66+.08*ease(p)));
+    }
+  }
+
+  function burst(){
+    for(let i=0;i<260;i++){
+      const a=Math.random()*Math.PI*2,s=.7+Math.random()*2.7;
+      sparkles.push({
+        x:W*.5+(Math.random()-.5)*180,y:H*.55+(Math.random()-.5)*180,
+        vx:Math.cos(a)*s*1.7,vy:Math.sin(a)*s*1.7,
+        life:1,r:1+Math.random()*2.4
+      });
+    }
+  }
+  function drawSparkles(dt){
+    for(let i=sparkles.length-1;i>=0;i--){
+      const s=sparkles[i];s.x+=s.vx*dt*60;s.y+=s.vy*dt*60;s.life-=dt*1.05;
+      if(s.life<=0){sparkles.splice(i,1);continue}
+      ctx.globalAlpha=s.life;
+      ctx.save();
+      ctx.translate(s.x,s.y);
+      ctx.rotate((1-s.life)*4);
+      ctx.globalAlpha=s.life;
+      if(s.kind==="star"){
+        ctx.fillStyle="#f5c518";
+        ctx.beginPath();
+        for(let k=0;k<10;k++){
+          const a=-Math.PI/2+k*Math.PI/5;
+          const rr=k%2===0?s.size:s.size*.42;
+          const px=Math.cos(a)*rr, py=Math.sin(a)*rr;
+          if(k===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+        }
+        ctx.closePath();ctx.fill();
+      }else{
+        const colors=["#f7c51d","#ffd84a","#e7a90d","#fff0a3"];
+        for(let k=0;k<6;k++){
+          const a=k*Math.PI/3;
+          ellipse(Math.cos(a)*s.size*.42,Math.sin(a)*s.size*.42,s.size*.25,s.size*.42,colors[k%colors.length]);
+        }
+        ellipse(0,0,s.size*.22,s.size*.22,"#8a4b20");
+      }
+      ctx.restore();
+    }
+    ctx.globalAlpha=1;
+  }
+
+  function reset(){
+    started=false; feeding=false; exploded=false; flip=0; bouquetProgress=0; message=0;
+    sparkles=[];
+    title.textContent="Alimenta al gato 🐾";
+    subtitle.textContent="Arrastra la comida hasta él";
+    title.classList.remove("show"); subtitle.classList.remove("show"); hint.classList.remove("show");
+    replayBtn.classList.remove("show");
+    food.classList.remove("hide");
+    food.style.left="12vw"; food.style.top="50%";
+    foodX=innerWidth*.12+36; foodY=innerHeight*.5+36;
+    if(!audio)makeAudio();
+  }
+
+  function feedCat(){
+    if(feeding || exploded) return;
+    feeding=true;
+    food.classList.add("hide");
+    chime();
+    burst();
+    setTimeout(()=>{
+      exploded=true;
+      started=true;
+      startTime=performance.now();
+    }, 650);
+  }
+
+  function moveFood(e){
+    if(feeding || exploded) return;
+    const x=e.clientX, y=e.clientY;
+    foodX=x; foodY=y;
+    food.style.left=(x-36)+"px";
+    food.style.top=(y-36)+"px";
+    if(Math.hypot(x-W*.5,y-H*.57)<115) feedCat();
+  }
+
+  food.addEventListener("pointerdown",e=>{
+    food.setPointerCapture?.(e.pointerId);
+    moveFood(e);
+  });
+  food.addEventListener("pointermove",moveFood);
+  food.addEventListener("pointerup",moveFood);
+
+  function render(now){
+    if(!last)last=now;
+    const dt=Math.min(.04,(now-last)/1000); last=now; floatT+=dt;
+    drawBackground();
+
+    if(!started){
+      drawPetals(dt);
+      drawCharacter(0,floatT);
+    }else{
+      const elapsed=(now-startTime)/1000;
+      // Durante la explosión, las flores y estrellas dominan toda la pantalla.
+      if(elapsed<1.35){
+        drawPetals(dt);
+      }else{
+        flip=ease(clamp((elapsed-1.35)/1.35));
+        bouquetProgress=clamp((elapsed-2.15)/.9);
+        message=clamp((elapsed-2.55)/.8);
+        drawPetals(dt);
+        drawCharacter(flip,floatT);
+        if(flip>.96 && bouquetProgress>.65){
+          title.textContent="Para ti 🌻";
+          subtitle.textContent="Misión cumplida";
+          title.classList.add("show"); subtitle.classList.add("show");
+        }
+        if(message>.9){
+          hint.classList.add("show"); replayBtn.classList.add("show");
+        }
+      }
+    }
+    drawSparkles(dt);
+    requestAnimationFrame(render);
+  }
+
+  requestAnimationFrame(render);
+})();
+</script>
+</body>
+</html>
