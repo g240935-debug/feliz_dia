@@ -1,385 +1,1312 @@
-<!doctype html>
-<html lang="es">
+<!DOCTYPE html>
+<html lang="es" class="h-full">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>cat</title>
-<style>
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#eeeae3}
-body{font-family:Georgia,"Times New Roman",serif;color:#171513}
-#game{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
-.ui{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;pointer-events:none;padding-top:7vh;z-index:10}
-h1{margin:0;font-size:clamp(32px,6vw,60px);font-weight:400;text-align:center;transition:opacity .5s}
-p{margin:10px 0 0;font-size:clamp(14px,2vw,19px);letter-spacing:.04em;opacity:.65}
-#food{
- position:fixed;z-index:20;width:82px;height:82px;border:0;background:transparent;
- font-size:48px;display:flex;align-items:center;justify-content:center;
- cursor:grab;touch-action:none;user-select:none;pointer-events:auto;
- filter:drop-shadow(0 7px 8px rgba(40,30,20,.18));
-}
-#food.dragging{cursor:grabbing;transform:scale(1.1)}
-#food.hidden{opacity:0;pointer-events:none}
-#again{
- position:fixed;z-index:30;right:18px;bottom:18px;width:46px;height:46px;
- border:1px solid rgba(30,25,20,.2);border-radius:50%;
- background:rgba(255,255,255,.6);font-size:21px;cursor:pointer;
- opacity:0;pointer-events:none;transition:opacity .4s;
-}
-#again.show{opacity:1;pointer-events:auto}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Campo de Girasoles al Atardecer 🌻</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Cormorant Garamond for poem & Montserrat for UI -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['"Cormorant Garamond"', 'serif'],
+            sans: ['"Montserrat"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Montserrat', sans-serif;
+      background-color: #120602;
+      color: #fff8f0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    /* Glassmorphism containers */
+    .glass-card {
+      background: rgba(24, 11, 7, 0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 
+                  0 0 35px rgba(245, 158, 11, 0.25);
+    }
+
+    .glass-card-sunset {
+      background: rgba(35, 16, 8, 0.88);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(253, 224, 71, 0.4);
+      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.9),
+                  0 0 50px rgba(251, 191, 36, 0.3);
+    }
+
+    /* Sunset animated primary button */
+    .btn-sunset {
+      background: linear-gradient(135deg, #f59e0b 0%, #ea580c 50%, #d97706 100%);
+      background-size: 200% 200%;
+      animation: gradientMove 5s ease infinite;
+      box-shadow: 0 4px 25px rgba(245, 158, 11, 0.5);
+      transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .btn-sunset:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 8px 35px rgba(245, 158, 11, 0.8), 0 0 25px rgba(253, 224, 71, 0.6);
+    }
+
+    .btn-sunset:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    /* Pulsing button for revealing final message */
+    .btn-message-reveal {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(225, 29, 72, 0.92));
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(254, 240, 138, 0.7);
+      box-shadow: 0 10px 30px rgba(245, 158, 11, 0.5), 0 0 25px rgba(253, 224, 71, 0.4);
+      animation: pulseGlow 3s infinite ease-in-out;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% {
+        box-shadow: 0 10px 30px rgba(245, 158, 11, 0.5), 0 0 25px rgba(253, 224, 71, 0.4);
+        transform: translateY(0px);
+      }
+      50% {
+        box-shadow: 0 15px 40px rgba(245, 158, 11, 0.85), 0 0 38px rgba(253, 224, 71, 0.75);
+        transform: translateY(-4px);
+      }
+    }
+
+    @keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .text-glow-gold {
+      text-shadow: 0 0 20px rgba(253, 224, 71, 0.7), 0 0 40px rgba(245, 158, 11, 0.4);
+    }
+
+    .click-badge {
+      animation: floatPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes floatPulse {
+      0%, 100% { transform: translateY(0px); opacity: 0.85; }
+      50% { transform: translateY(-4px); opacity: 1; }
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(20, 10, 5, 0.8); }
+    ::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.6); border-radius: 3px; }
+  </style>
 </head>
-<body>
-<canvas id="game"></canvas>
+<body class="h-full w-full relative overflow-hidden bg-slate-950">
 
-<div class="ui">
-  <h1 id="title">Alimenta al gato🐾</h1>
-  <p id="instruction">Arrastra la comida hasta el</p>
-</div>
+  <!-- Layer 1: Background Canvas for Sunset Field, Grass, Sunflowers, Butterflies & Pollen -->
+  <canvas id="mainCanvas" class="absolute inset-0 w-full h-full z-0 block cursor-pointer"></canvas>
 
-<div id="food" role="button" aria-label="Arrastra la comida">🐟</div>
-<button id="again" aria-label="Jugar otra vez">↻</button>
+  <!-- Screen 0: Mini-Juego "Alimenta al Gatito" -->
+  <div id="feedCatScreen" class="absolute inset-0 z-30 flex items-center justify-center p-4 bg-slate-950/90 transition-all duration-700">
+    <div class="glass-card rounded-3xl p-8 md:p-10 max-w-md w-full text-center relative overflow-hidden">
+      <div class="absolute -top-16 -right-16 w-36 h-36 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
+      
+      <h2 class="font-serif text-2xl md:text-3xl font-bold text-amber-100 mb-2 text-glow-gold">
+        ¡Un gatito hambriento! 🐱
+      </h2>
+      <p class="text-amber-200/80 text-xs md:text-sm mb-6 font-light">
+        Toca el botecito de comida para alimentarlo y que pueda entregarte el regalo.
+      </p>
 
-<script>
-(() => {
-const canvas=document.getElementById("game");
-const ctx=canvas.getContext("2d");
-const food=document.getElementById("food");
-const title=document.getElementById("title");
-const instruction=document.getElementById("instruction");
-const again=document.getElementById("again");
+      <!-- Cat Container -->
+      <div class="my-6 relative flex flex-col items-center justify-center">
+        <div id="catEmoji" class="text-6xl md:text-7xl transition-transform duration-300 animate-bounce">
+          😺
+        </div>
+        <div id="feedProgressText" class="text-xs text-amber-300 font-semibold mt-3 tracking-wide">
+          Comida dada: <span id="feedCount">0</span> / 3
+        </div>
+        <!-- Progress Bar -->
+        <div class="w-48 h-2 bg-slate-800 rounded-full mt-2 overflow-hidden border border-amber-500/30">
+          <div id="feedBar" class="h-full bg-amber-500 w-0 transition-all duration-300"></div>
+        </div>
+      </div>
 
-let W=0,H=0,dpr=1;
-let state="ready";
-let foodX=0,foodY=0;
-let particles=[];
-let startTime=0;
-let raf=0;
+      <!-- Feed Action Button -->
+      <button id="feedBtn" onclick="feedCat()" class="btn-sunset w-full py-3.5 rounded-2xl text-amber-950 font-bold text-sm md:text-base flex items-center justify-center gap-2 cursor-pointer shadow-lg">
+        <span>🐟 Dar snack al gatito</span>
+      </button>
+    </div>
+  </div>
 
-function resize(){
-  dpr=Math.min(2,devicePixelRatio||1);
-  W=innerWidth;H=innerHeight;
-  canvas.width=W*dpr;canvas.height=H*dpr;
-  canvas.style.width=W+"px";canvas.style.height=H+"px";
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  if(state==="ready") placeFood();
-}
-addEventListener("resize",resize);
+  <!-- Screen 1: Dark Burgundy Intro Cover Screen (Aparece tras alimentar al gato) -->
+  <div id="introScreen" class="absolute inset-0 z-20 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-1000 ease-out">
+    <div class="glass-card rounded-3xl p-8 md:p-12 max-w-lg w-full text-center relative overflow-hidden">
+      
+      <!-- Ambient Glow Behind Card -->
+      <div class="absolute -top-20 -left-20 w-44 h-44 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-20 -right-20 w-44 h-44 bg-orange-600/20 rounded-full blur-3xl pointer-events-none"></div>
 
-function placeFood(){
-  foodX=Math.max(45,W*.12);
-  foodY=H*.55;
-  food.style.left=(foodX-41)+"px";
-  food.style.top=(foodY-41)+"px";
-}
+      <!-- Gatito entregando ramo en miniatura decorativa -->
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-500/15 border border-amber-500/40 mb-6 text-3xl shadow-inner">
+        🐈‍⬛🌻
+      </div>
 
-function bg(){
-  const g=ctx.createLinearGradient(0,0,W,H);
-  g.addColorStop(0,"#f8dfc4");
-  g.addColorStop(.45,"#f4c9b8");
-  g.addColorStop(1,"#d8c5df");
-  ctx.fillStyle=g;
-  ctx.fillRect(0,0,W,H);
-  ctx.globalAlpha=.22;
-  ctx.fillStyle="#fff7e8";
-  ctx.beginPath(); ctx.arc(W*.12,H*.18,Math.min(W,H)*.16,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(W*.88,H*.78,Math.min(W,H)*.20,0,Math.PI*2); ctx.fill();
-  ctx.globalAlpha=1;
-}
+      <h1 id="introTitle" class="font-serif text-3xl md:text-5xl font-bold text-amber-100 tracking-wide mb-4 text-glow-gold">
+        Para: Paula, Silvia y Sonia ✨
+      </h1>
 
-function ellipse(x,y,rx,ry,c){
-  ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);
-  ctx.fillStyle=c;ctx.fill();
-}
+      <p id="introMessage" class="text-amber-100/90 text-xs md:text-sm leading-relaxed font-light mb-8 max-w-sm mx-auto">
+        Un detalle especial de aprecio para ustedes.
+      </p>
 
-function line(x1,y1,x2,y2,c,w){
-  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);
-  ctx.strokeStyle=c;ctx.lineWidth=w;ctx.lineCap="round";ctx.stroke();
-}
+      <button id="startBtn" class="btn-sunset w-full sm:w-auto px-8 py-4 rounded-2xl text-amber-950 font-bold text-base md:text-lg tracking-wide flex items-center justify-center gap-3 mx-auto cursor-pointer group">
+        <span>Ver el detalle</span>
+        <span class="text-xl transition-transform duration-300 group-hover:rotate-12 group-hover:scale-125">🌻</span>
+      </button>
 
-function flower(x,y,s){
-  for(let i=0;i<8;i++){
-    const a=i*Math.PI/4;
-    ellipse(x+Math.cos(a)*7*s,y+Math.sin(a)*7*s,4*s,8*s,
-      i%2?"#ffd84a":"#f4bf19");
-  }
-  ellipse(x,y,4*s,4*s,"#70401e");
-}
+      <div class="mt-6 text-[11px] text-amber-300/70 font-light italic">
+        De: Andrès y Camilo
+      </div>
+    </div>
+  </div>
 
-function star(x,y,s,a){
-  ctx.save();ctx.translate(x,y);ctx.rotate(a);
-  ctx.beginPath();
-  for(let i=0;i<10;i++){
-    const r=i%2?s:s*.4, q=-Math.PI/2+i*Math.PI/5;
-    const px=Math.cos(q)*r,py=Math.sin(q)*r;
-    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
-  }
-  ctx.closePath();ctx.fillStyle="#f7c51d";ctx.fill();ctx.restore();
-}
+  <!-- Screen 2: Transition Overlay ("Esperen...") -->
+  <div id="transitionScreen" class="absolute inset-0 z-30 flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-1000">
+    <div class="text-center max-w-lg">
+      <div class="inline-block mb-6 relative">
+        <div class="w-14 h-14 rounded-full border-2 border-amber-400/20 border-t-amber-400 animate-spin"></div>
+        <div class="absolute inset-0 flex items-center justify-center text-sm">🐈‍⬛</div>
+      </div>
+      <h2 class="font-serif text-2xl md:text-4xl text-amber-200 font-medium tracking-wide leading-relaxed text-glow-gold">
+        El gatito está preparando el ramo de girasoles...
+      </h2>
+      <p class="text-amber-400/70 text-xs mt-3 tracking-widest uppercase font-light">
+        El campo cobra vida al atardecer
+      </p>
+    </div>
+  </div>
 
-function bouquet(x,y,s){
-  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  <!-- HUD Controls (Top Right Audio Button) -->
+  <div id="hudControls" class="absolute top-4 right-4 z-40 flex items-center gap-3 opacity-0 transition-opacity duration-1000 pointer-events-none">
+    <button id="audioBtn" onclick="toggleAudio()" class="glass-card p-3 rounded-full text-amber-300 hover:text-amber-100 hover:bg-amber-500/20 transition-all cursor-pointer border border-amber-500/30 shadow-lg flex items-center gap-2 px-4 text-xs font-semibold" title="Activar / Desactivar Música">
+      <span id="audioIcon">🎵</span>
+      <span id="audioText" class="hidden sm:inline">Música</span>
+    </button>
+  </div>
 
-  // hojas
-  const leaf=(x,y,r)=>{
-    ctx.save();ctx.translate(x,y);ctx.rotate(r);
-    ctx.beginPath();ctx.moveTo(0,0);
-    ctx.bezierCurveTo(18,-13,28,-9,34,0);
-    ctx.bezierCurveTo(24,12,10,13,0,0);
-    ctx.fillStyle="#557047";ctx.fill();ctx.restore();
-  };
-  leaf(-72,15,-.55);leaf(72,15,.55);
-  leaf(-54,-40,-.8);leaf(54,-40,.8);
-  leaf(-24,-56,-.2);leaf(24,-56,.2);
+  <!-- Persistent Bottom Floating Controls -->
+  <div id="bottomHud" class="absolute bottom-6 left-0 right-0 z-20 flex flex-col items-center gap-3 pointer-events-none opacity-0 transition-opacity duration-1000">
+    
+    <!-- Floating Trigger Button to Open Message Modal -->
+    <button id="revealMessageBtn" onclick="openFinalModal()" class="pointer-events-auto btn-message-reveal px-7 py-3.5 rounded-full text-white font-serif font-bold text-base md:text-lg flex items-center gap-3 shadow-2xl hover:scale-105 active:scale-95 transition-transform cursor-pointer">
+      <span class="text-amber-200 text-xl">🐱</span>
+      <span>Ver mensaje del gatito</span>
+      <span class="text-amber-200 text-xl">🌻</span>
+    </button>
 
-  // tallos
-  for(let i=-4;i<=4;i++)line(i*5,65,i*7,164,i%2?"#426034":"#354e2b",2);
+    <!-- Interactive Hint Banner -->
+    <div class="click-badge glass-card px-5 py-2 rounded-full border border-amber-400/30 text-amber-200/90 text-xs md:text-sm font-medium flex items-center gap-2 shadow-xl">
+      <span class="text-amber-300">✨</span>
+      <span>Toca cualquier parte del campo para plantar nuevos girasoles</span>
+    </div>
+  </div>
 
-  flower(-66,8,.9);flower(67,10,.92);
-  flower(-52,-42,.72);flower(50,-43,.74);
-  flower(-29,-67,.65);flower(30,-67,.65);
+  <!-- Screen 3: Final Gift Card Screen (Modal) -->
+  <div id="finalScreen" class="absolute inset-0 z-40 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-700 bg-slate-950/60 backdrop-blur-sm">
+    <div class="glass-card-sunset rounded-3xl p-8 md:p-12 max-w-xl w-full text-center relative overflow-hidden border border-amber-400/40">
+      
+      <!-- Close Button to return to Field View anytime -->
+      <button onclick="closeFinalModal()" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-amber-500/20 hover:bg-amber-500/40 text-amber-200 border border-amber-400/30 flex items-center justify-center text-lg transition-all cursor-pointer" title="Volver al campo">
+        ✕
+      </button>
 
-  // girasol principal
-  for(let i=0;i<20;i++){
-    const a=i*Math.PI*2/20;
-    ctx.save();ctx.translate(0,0);ctx.rotate(a);
-    ctx.beginPath();ctx.moveTo(0,-7);
-    ctx.bezierCurveTo(-7,-23,-7,-31,0,-36);
-    ctx.bezierCurveTo(7,-31,7,-23,0,-7);
-    ctx.fillStyle=i%2?"#f7c51d":"#ffd84a";ctx.fill();ctx.restore();
-  }
-  ellipse(0,0,14,14,"#6b3518");
+      <div class="mb-4 inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-500/20 border border-amber-400/40 text-2xl text-amber-300 shadow-lg">
+        🐱🌻
+      </div>
 
-  // papel kraft
-  ctx.beginPath();
-  ctx.moveTo(-72,58);ctx.lineTo(-36,22);ctx.lineTo(0,70);
-  ctx.lineTo(36,22);ctx.lineTo(72,58);ctx.lineTo(43,124);
-  ctx.lineTo(0,150);ctx.lineTo(-43,124);ctx.closePath();
-  ctx.fillStyle="#c48a58";ctx.fill();
-  ctx.strokeStyle="rgba(94,52,28,.45)";ctx.lineWidth=1;ctx.stroke();
+      <h2 id="finalTitle" class="font-serif text-3xl md:text-5xl font-bold text-amber-100 mb-4 text-glow-gold">
+        ¡Un gran saludo! ✨
+      </h2>
 
-  line(-65,58,0,110,"rgba(100,57,30,.38)",1);
-  line(0,110,65,58,"rgba(100,57,30,.38)",1);
+      <p id="finalBody" class="text-amber-100/95 text-sm md:text-base leading-relaxed font-serif italic mb-8 max-w-md mx-auto">
+        "Les deseamos una semana excelente, llena de buenas energías, grandes momentos y personas que valoren su esfuerzo día a día."
+      </p>
 
-  ctx.beginPath();ctx.arc(0,91,31,0,Math.PI*2);
-  ctx.strokeStyle="#7b431f";ctx.lineWidth=4;ctx.stroke();
-  ellipse(-24,92,20,11,"#7f4824");ellipse(24,92,20,11,"#7f4824");
-  ellipse(0,92,8,8,"#6b381c");
-  ctx.restore();
-}
+      <div id="finalSender" class="text-amber-300 font-sans text-xs tracking-widest uppercase mb-8 font-bold">
+        💛 Att: Andres y Camilo
+      </div>
 
-function cat(front,t){
-  const s=Math.min(W,H)/620;
-  const cx=W*.5,cy=H*.58+Math.sin(t*2)*2;
-  ctx.save();ctx.translate(cx,cy);
-  const k=front;
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <button onclick="closeFinalModal()" class="w-full sm:w-auto px-6 py-3.5 rounded-xl btn-sunset text-amber-950 font-bold text-xs md:text-sm shadow-lg flex items-center justify-center gap-2">
+          <span>🌻</span> Volver al campo
+        </button>
+      </div>
+    </div>
+  </div>
 
-  // sombra
-  ctx.globalAlpha=.15;ctx.filter="blur(10px)";
-  ellipse(0,135*s,75*s,10*s,"#4f4035");
-  ctx.filter="none";ctx.globalAlpha=1;
+  <script>
+    /* ====================================================================
+       MINI-JUEGO: ALIMENTAR AL GATITO
+       ==================================================================== */
+    let feedScore = 0;
+    const maxFeeds = 3;
 
-  // cuerpo
-  ellipse(0,30*s,72*s,112*s,"#d7d1c7");
+    function feedCat() {
+      feedScore++;
+      document.getElementById('feedCount').innerText = feedScore;
+      const bar = document.getElementById('feedBar');
+      if (bar) {
+        bar.style.width = (feedScore / maxFeeds) * 100 + '%';
+      }
 
-  // cola
-  ctx.strokeStyle="#8d8175";ctx.lineWidth=12*s;ctx.lineCap="round";
-  ctx.beginPath();ctx.moveTo(58*s,55*s);
-  ctx.bezierCurveTo(105*s,35*s,110*s,-5*s,82*s,-28*s);ctx.stroke();
+      const catEmoji = document.getElementById('catEmoji');
+      if (catEmoji) {
+        catEmoji.innerText = feedScore >= maxFeeds ? '😻' : '😽';
+        catEmoji.style.transform = 'scale(1.2)';
+        setTimeout(() => { catEmoji.style.transform = 'scale(1)'; }, 200);
+      }
 
-  if(!front){
-    // cabeza vista desde atrás
-    ellipse(0,-58*s,72*s,62*s,"#c8c0b5");
-    ctx.beginPath();ctx.moveTo(-62*s,-88*s);ctx.lineTo(-47*s,-137*s);ctx.lineTo(-15*s,-105*s);ctx.closePath();
-    ctx.fillStyle="#7b7066";ctx.fill();
-    ctx.beginPath();ctx.moveTo(62*s,-88*s);ctx.lineTo(47*s,-137*s);ctx.lineTo(15*s,-105*s);ctx.closePath();
-    ctx.fillStyle="#7b7066";ctx.fill();
-    for(let i=-2;i<=2;i++)line(i*15*s,-110*s,i*19*s,-67*s,"rgba(45,30,22,.45)",3*s);
-    // patas delanteras hacia atrás
-    line(-54*s,28*s,-28*s,91*s,"#7b7066",12*s);
-    line(54*s,28*s,28*s,91*s,"#7b7066",12*s);
-  }else{
-    // cabeza frontal menos tierna, angular
-    ctx.beginPath();
-    ctx.moveTo(-69*s,-45*s);ctx.quadraticCurveTo(-74*s,-105*s,0,-118*s);
-    ctx.quadraticCurveTo(74*s,-105*s,69*s,-45*s);
-    ctx.quadraticCurveTo(62*s,10*s,0,13*s);
-    ctx.quadraticCurveTo(-62*s,10*s,-69*s,-45*s);
-    ctx.fillStyle="#d2cbc1";ctx.fill();
-    ctx.strokeStyle="#675f58";ctx.lineWidth=2*s;ctx.stroke();
+      if (feedScore >= maxFeeds) {
+        setTimeout(() => {
+          const feedScreen = document.getElementById('feedCatScreen');
+          if (feedScreen) {
+            feedScreen.style.opacity = '0';
+            feedScreen.style.pointerEvents = 'none';
+          }
+          const intro = document.getElementById('introScreen');
+          if (intro) {
+            intro.style.opacity = '1';
+            intro.style.pointerEvents = 'auto';
+          }
+        }, 500);
+      }
+    }
 
-    // orejas
-    ctx.beginPath();ctx.moveTo(-61*s,-89*s);ctx.lineTo(-48*s,-138*s);ctx.lineTo(-13*s,-106*s);ctx.closePath();
-    ctx.fillStyle="#b8aea3";ctx.fill();
-    ctx.beginPath();ctx.moveTo(61*s,-89*s);ctx.lineTo(48*s,-138*s);ctx.lineTo(13*s,-106*s);ctx.closePath();
-    ctx.fillStyle="#b8aea3";ctx.fill();
+    /* ====================================================================
+       WEB AUDIO SYNTHESIZER (Safe initialization with error boundary)
+       ==================================================================== */
+    class SunsetAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.isPlaying = false;
+        this.timer = null;
+        this.notes = [174.61, 220.00, 261.63, 329.63, 349.23, 440.00, 523.25, 659.25];
+      }
 
-    // ojos estrechos
-    ctx.strokeStyle="#171513";ctx.lineWidth=6*s;
-    ctx.beginPath();ctx.moveTo(-42*s,-55*s);ctx.quadraticCurveTo(-27*s,-65*s,-13*s,-55*s);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(13*s,-55*s);ctx.quadraticCurveTo(27*s,-65*s,42*s,-55*s);ctx.stroke();
+      init() {
+        try {
+          if (!this.ctx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+              this.ctx = new AudioContext();
+            }
+          }
+        } catch (e) {
+          console.warn('Web Audio not supported or blocked:', e);
+        }
+      }
 
-    ellipse(-27*s,-54*s,4*s,7*s,"#171513");
-    ellipse(27*s,-54*s,4*s,7*s,"#171513");
+      start() {
+        try {
+          this.init();
+          if (this.ctx) {
+            if (this.ctx.state === 'suspended') {
+              this.ctx.resume();
+            }
+            this.isPlaying = true;
+            this.playWarmDrone();
+            this.scheduleMelody();
+          }
+        } catch (e) {
+          console.warn('Error starting audio:', e);
+        }
+      }
 
-    // hocico serio
-    ellipse(-12*s,-30*s,12*s,8*s,"#b1a79d");
-    ellipse(12*s,-30*s,12*s,8*s,"#b1a79d");
-    ellipse(0,-33*s,5*s,4*s,"#403a36");
-    line(0,-29*s,-9*s,-22*s,"#403a36",2*s);
-    line(0,-29*s,9*s,-22*s,"#403a36",2*s);
+      stop() {
+        this.isPlaying = false;
+        if (this.timer) clearInterval(this.timer);
+      }
 
-    // bigotes
-    line(-16*s,-31*s,-61*s,-39*s,"#756c65",1.5*s);
-    line(-16*s,-25*s,-64*s,-25*s,"#756c65",1.5*s);
-    line(16*s,-31*s,61*s,-39*s,"#756c65",1.5*s);
-    line(16*s,-25*s,64*s,-25*s,"#756c65",1.5*s);
+      playWarmDrone() {
+        if (!this.isPlaying || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const filter = this.ctx.createBiquadFilter();
 
-    // brazos abrazando el ramo
-    line(-62*s,28*s,-40*s,67*s,"#7b7066",12*s);
-    line(62*s,28*s,40*s,67*s,"#7b7066",12*s);
-  }
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(130.81, this.ctx.currentTime);
 
-  ctx.restore();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(280, this.ctx.currentTime);
 
-  if(front) bouquet(cx,cy+61*s,s*.74);
-}
+          gain.gain.setValueAtTime(0.001, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.065, this.ctx.currentTime + 3);
 
-function makeExplosion(){
-  particles=[];
-  for(let i=0;i<520;i++){
-    const a=Math.random()*Math.PI*2;
-    const speed=7+Math.random()*18;
-    particles.push({
-      x:W*.5+(Math.random()-.5)*40,
-      y:H*.55+(Math.random()-.5)*40,
-      vx:Math.cos(a)*speed,
-      vy:Math.sin(a)*speed,
-      life:1.8+Math.random()*1.5,
-      max:2.7,
-      type:Math.random()<.58?"flower":"star",
-      size:4+Math.random()*10,
-      rot:Math.random()*6
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+        } catch(e) {}
+      }
+
+      playChime() {
+        if (!this.isPlaying || !this.ctx) return;
+        try {
+          const freq = this.notes[Math.floor(Math.random() * this.notes.length)];
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+          const now = this.ctx.currentTime;
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.linearRampToValueAtTime(0.035, now + 1.5);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 5.5);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 5.6);
+        } catch(e) {}
+      }
+
+      scheduleMelody() {
+        this.playChime();
+        this.timer = setInterval(() => {
+          if (this.isPlaying && Math.random() > 0.25) {
+            this.playChime();
+          }
+        }, 1600);
+      }
+    }
+
+    const audioEngine = new SunsetAudioEngine();
+    let audioActive = false;
+
+    function toggleAudio() {
+      audioActive = !audioActive;
+      const audioIcon = document.getElementById('audioIcon');
+      const audioText = document.getElementById('audioText');
+      
+      if (audioActive) {
+        audioEngine.start();
+        if (audioIcon) audioIcon.innerText = '🔊';
+        if (audioText) audioText.innerText = 'Música ON';
+      } else {
+        audioEngine.stop();
+        if (audioIcon) audioIcon.innerText = '🔇';
+        if (audioText) audioText.innerText = 'Música OFF';
+      }
+    }
+
+    /* ====================================================================
+       CANVAS GRAPHICS ENGINE
+       ==================================================================== */
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+
+    function resizeCanvas() {
+      dpr = window.devicePixelRatio || 1;
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.scale(dpr, dpr);
+      
+      initGrassBlades();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    let currentPhase = 0; // 0: Intro, 1: Transition, 2: Hero Bloom, 3: Wave Bloom, 4: Full Field View
+    let animationTime = 0;
+    let heroSunflower = null;
+    let fieldSunflowers = [];
+    let horizonBloomClusters = [];
+    let pollenParticles = [];
+    let butterflies = [];
+    let grassBlades = [];
+    let phaseStartTime = 0;
+
+    /* Butterfly Class */
+    class Butterfly {
+      constructor(x, y, scale = 1, colorType = 'monarch') {
+        this.x = x;
+        this.y = y;
+        this.scale = scale;
+        this.colorType = colorType;
+        
+        this.wingAngle = Math.random() * Math.PI * 2;
+        this.wingSpeed = 0.22 + Math.random() * 0.15;
+        
+        this.vx = (Math.random() - 0.5) * 1.5;
+        this.vy = (Math.random() - 0.5) * 1.0;
+        
+        this.targetX = x;
+        this.targetY = y;
+        this.changeTargetTimer = 0;
+      }
+
+      update(dt) {
+        this.wingAngle += this.wingSpeed;
+
+        this.changeTargetTimer -= dt;
+        if (this.changeTargetTimer <= 0) {
+          this.targetX = Math.random() * width;
+          this.targetY = height * 0.32 + Math.random() * (height * 0.5);
+          this.changeTargetTimer = 3 + Math.random() * 4;
+        }
+
+        this.vx += (this.targetX - this.x) * 0.00025;
+        this.vy += (this.targetY - this.y) * 0.00025;
+
+        const speed = Math.hypot(this.vx, this.vy);
+        if (speed > 2.8) {
+          this.vx = (this.vx / speed) * 2.8;
+          this.vy = (this.vy / speed) * 2.8;
+        }
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.x < -20) this.x = width + 20;
+        if (this.x > width + 20) this.x = -20;
+        if (this.y < height * 0.2) this.y = height * 0.4;
+        if (this.y > height + 20) this.y = height * 0.7;
+      }
+
+      draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        const flightAngle = Math.atan2(this.vy, this.vx) + Math.PI / 2;
+        ctx.rotate(flightAngle * 0.3);
+        ctx.scale(this.scale, this.scale);
+
+        const flap = Math.sin(this.wingAngle);
+
+        let mainColor = '#f97316';
+        let secondaryColor = '#fde047';
+        if (this.colorType === 'gold') {
+          mainColor = '#fbbf24';
+          secondaryColor = '#fef08a';
+        } else if (this.colorType === 'lavender') {
+          mainColor = '#c084fc';
+          secondaryColor = '#e9d5ff';
+        } else if (this.colorType === 'blue') {
+          mainColor = '#38bdf8';
+          secondaryColor = '#bae6fd';
+        }
+
+        // Left Wing
+        ctx.save();
+        ctx.scale(flap, 1);
+        ctx.beginPath();
+        ctx.moveTo(0, -2);
+        ctx.bezierCurveTo(-18, -20, -26, 4, -4, 10);
+        ctx.fillStyle = mainColor;
+        ctx.fill();
+        ctx.strokeStyle = '#1c1917';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(-8, -4, 3, 0, Math.PI * 2);
+        ctx.fillStyle = secondaryColor;
+        ctx.fill();
+        ctx.restore();
+
+        // Right Wing
+        ctx.save();
+        ctx.scale(-flap, 1);
+        ctx.beginPath();
+        ctx.moveTo(0, -2);
+        ctx.bezierCurveTo(-18, -20, -26, 4, -4, 10);
+        ctx.fillStyle = mainColor;
+        ctx.fill();
+        ctx.strokeStyle = '#1c1917';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(-8, -4, 3, 0, Math.PI * 2);
+        ctx.fillStyle = secondaryColor;
+        ctx.fill();
+        ctx.restore();
+
+        // Body
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 2.2, 9, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#1c1917';
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    function initGrassBlades() {
+      grassBlades = [];
+      const density = Math.floor(width / 3.2);
+
+      for (let i = 0; i < density; i++) {
+        const x = Math.random() * width;
+        const hillY = height - Math.sin((x / width) * Math.PI) * (height * 0.15) - Math.random() * (height * 0.38);
+        
+        const bladeHeight = 16 + Math.random() * 32;
+        const bladeWidth = 2 + Math.random() * 2.8;
+        const lean = (Math.random() - 0.5) * 20;
+        const swayPhase = Math.random() * Math.PI * 2;
+        const swaySpeed = 0.002 + Math.random() * 0.0015;
+
+        const greenShades = ['#1e4620', '#2d6a31', '#3a833f', '#4d9e53', '#70b342', '#a3e635'];
+        const color = greenShades[Math.floor(Math.random() * greenShades.length)];
+
+        grassBlades.push({ x, y: hillY, height: bladeHeight, width: bladeWidth, lean, swayPhase, swaySpeed, color });
+      }
+
+      grassBlades.sort((a, b) => a.y - b.y);
+    }
+
+    function drawGrassBlades(ctx, globalTime, growthProgress = 1) {
+      if (growthProgress <= 0) return;
+
+      grassBlades.forEach(g => {
+        ctx.save();
+        const currentH = g.height * Math.min(1, growthProgress);
+        const sway = Math.sin(globalTime * g.swaySpeed + g.swayPhase) * 10;
+        
+        ctx.beginPath();
+        ctx.moveTo(g.x, g.y);
+        ctx.quadraticCurveTo(
+          g.x + g.lean * 0.5, 
+          g.y - currentH * 0.5, 
+          g.x + g.lean + sway, 
+          g.y - currentH
+        );
+        ctx.quadraticCurveTo(
+          g.x + g.width + g.lean * 0.5, 
+          g.y - currentH * 0.5, 
+          g.x + g.width, 
+          g.y
+        );
+
+        ctx.fillStyle = g.color;
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
+    class Sunflower {
+      constructor(x, y, targetHeight, scale = 1, isHero = false, delay = 0) {
+        this.x = x;
+        this.y = y;
+        this.targetHeight = targetHeight;
+        this.scale = scale;
+        this.isHero = isHero;
+        this.delay = delay;
+
+        this.stemProgress = 0;
+        this.leafProgress = 0;
+        this.centerProgress = 0;
+        this.petalProgress = 0;
+
+        this.curveOffset = (Math.random() - 0.5) * 45 * scale;
+        this.stemThickness = Math.max(2, (6 + Math.random() * 5) * scale);
+        this.tiltAngle = (Math.random() - 0.5) * 0.28;
+        this.swayPhase = Math.random() * Math.PI * 2;
+        this.swaySpeed = 0.0012 + Math.random() * 0.0012;
+
+        this.totalPetals = isHero ? 38 : Math.floor(20 + Math.random() * 12 + scale * 14);
+        this.petalColors = ['#f59e0b', '#fbbf24', '#eab308', '#d97706', '#fef08a', '#facc15'];
+        this.seedCount = isHero ? 240 : Math.floor(60 + scale * 120);
+        this.headRadiusMultiplier = 0.85 + Math.random() * 0.35;
+      }
+
+      update(dt, elapsed) {
+        if (elapsed < this.delay) return;
+
+        const timeInGrowth = elapsed - this.delay;
+
+        if (this.stemProgress < 1) {
+          this.stemProgress = Math.min(1, this.stemProgress + dt * (this.isHero ? 0.45 : 0.85));
+        } 
+        else if (this.leafProgress < 1) {
+          this.leafProgress = Math.min(1, this.leafProgress + dt * 0.95);
+        } 
+        else if (this.centerProgress < 1) {
+          this.centerProgress = Math.min(1, this.centerProgress + dt * 0.85);
+        } 
+        else if (this.petalProgress < 1) {
+          this.petalProgress = Math.min(1, this.petalProgress + dt * 0.7);
+        }
+      }
+
+      draw(ctx, globalTime) {
+        if (this.stemProgress <= 0) return;
+
+        ctx.save();
+
+        const sway = Math.sin(globalTime * this.swaySpeed + this.swayPhase) * (14 * this.scale);
+        const currentStemH = this.targetHeight * this.stemProgress;
+
+        const baseX = this.x;
+        const baseY = this.y;
+        const tipX = this.x + this.curveOffset + sway;
+        const tipY = this.y - currentStemH;
+
+        // 1. Stem
+        ctx.beginPath();
+        ctx.moveTo(baseX, baseY);
+        const cpX = baseX + (this.curveOffset + sway) * 0.5;
+        const cpY = baseY - currentStemH * 0.5;
+        ctx.quadraticCurveTo(cpX, cpY, tipX, tipY);
+
+        ctx.strokeStyle = '#234a1e';
+        ctx.lineWidth = this.stemThickness * (this.stemProgress * 0.3 + 0.7);
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        ctx.strokeStyle = '#366d2f';
+        ctx.lineWidth = Math.max(1, this.stemThickness * 0.4);
+        ctx.stroke();
+
+        // 2. Leaves
+        if (this.leafProgress > 0) {
+          this.drawLeaves(ctx, baseX, baseY, tipX, tipY, cpX, cpY);
+        }
+
+        // 3. Flower Head
+        if (this.centerProgress > 0) {
+          this.drawHead(ctx, tipX, tipY);
+        }
+
+        ctx.restore();
+      }
+
+      drawLeaves(ctx, bx, by, tx, ty, cpx, cpy) {
+        const leafScale = this.leafProgress * this.scale;
+
+        // Left Leaf
+        const l1x = bx + (cpx - bx) * 0.45;
+        const l1y = by + (cpy - by) * 0.45;
+
+        ctx.save();
+        ctx.translate(l1x, l1y);
+        ctx.scale(leafScale, leafScale);
+        ctx.rotate(-0.75 + Math.sin(this.swayPhase) * 0.08);
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(-22, -12, -38, -6, -48, 12);
+        ctx.bezierCurveTo(-32, 28, -12, 22, 0, 0);
+        ctx.fillStyle = '#225222';
+        ctx.fill();
+        ctx.strokeStyle = '#183a18';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+
+        // Right Leaf
+        const l2x = bx + (tx - bx) * 0.65;
+        const l2y = by + (ty - by) * 0.65;
+
+        ctx.save();
+        ctx.translate(l2x, l2y);
+        ctx.scale(leafScale, leafScale);
+        ctx.rotate(0.7 - Math.sin(this.swayPhase) * 0.08);
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(22, -12, 38, -6, 48, 12);
+        ctx.bezierCurveTo(32, 28, 12, 22, 0, 0);
+        ctx.fillStyle = '#286127';
+        ctx.fill();
+        ctx.strokeStyle = '#183a18';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      drawHead(ctx, headX, headY) {
+        ctx.save();
+        ctx.translate(headX, headY);
+        ctx.rotate(this.tiltAngle);
+
+        const diskRadius = 36 * this.scale * this.headRadiusMultiplier * this.centerProgress;
+
+        // Petals layer
+        if (this.petalProgress > 0) {
+          const visiblePetals = Math.floor(this.totalPetals * this.petalProgress);
+
+          for (let i = 0; i < visiblePetals; i++) {
+            const angle = i * (Math.PI * 2 / this.totalPetals);
+            const petalLen = (52 + Math.sin(i * 3.5) * 8) * this.scale * this.headRadiusMultiplier;
+            const petalWidth = 15 * this.scale * this.headRadiusMultiplier;
+            const color = this.petalColors[i % this.petalColors.length];
+
+            ctx.save();
+            ctx.rotate(angle);
+
+            const indProgress = Math.min(1, Math.max(0, (this.petalProgress * this.totalPetals - i)));
+            const scaleSpring = Math.sin(indProgress * Math.PI * 0.5);
+            ctx.scale(scaleSpring, scaleSpring);
+
+            ctx.beginPath();
+            ctx.moveTo(0, diskRadius * 0.6);
+            ctx.quadraticCurveTo(-petalWidth * 0.85, petalLen * 0.5, 0, petalLen + diskRadius * 0.6);
+            ctx.quadraticCurveTo(petalWidth * 0.85, petalLen * 0.5, 0, diskRadius * 0.6);
+
+            const pGrad = ctx.createLinearGradient(0, diskRadius * 0.6, 0, petalLen + diskRadius);
+            pGrad.addColorStop(0, '#d97706');
+            pGrad.addColorStop(0.35, color);
+            pGrad.addColorStop(1, '#fef08a');
+
+            ctx.fillStyle = pGrad;
+            ctx.fill();
+
+            // Vein detail
+            ctx.beginPath();
+            ctx.moveTo(0, diskRadius * 0.7);
+            ctx.lineTo(0, petalLen * 0.85 + diskRadius * 0.6);
+            ctx.strokeStyle = 'rgba(180, 83, 9, 0.35)';
+            ctx.lineWidth = 1 * this.scale;
+            ctx.stroke();
+
+            ctx.restore();
+          }
+        }
+
+        // Fibonacci Seed Center Disk
+        ctx.beginPath();
+        ctx.arc(0, 0, diskRadius, 0, Math.PI * 2);
+        const centerGrad = ctx.createRadialGradient(0, 0, diskRadius * 0.1, 0, 0, diskRadius);
+        centerGrad.addColorStop(0, '#261204');
+        centerGrad.addColorStop(0.7, '#3d1d07');
+        centerGrad.addColorStop(1, '#1b0c02');
+        ctx.fillStyle = centerGrad;
+        ctx.fill();
+
+        ctx.strokeStyle = '#5a2d0a';
+        ctx.lineWidth = 2 * this.scale;
+        ctx.stroke();
+
+        // Seeds
+        if (this.centerProgress > 0.3) {
+          const phi = (1 + Math.sqrt(5)) / 2;
+          const goldenAngle = (2 - phi) * Math.PI * 2;
+          const seedsToDraw = Math.floor(this.seedCount * this.centerProgress);
+
+          for (let i = 0; i < seedsToDraw; i++) {
+            const r = Math.sqrt(i / this.seedCount) * (diskRadius - 3 * this.scale);
+            const theta = i * goldenAngle;
+            const sx = r * Math.cos(theta);
+            const sy = r * Math.sin(theta);
+
+            ctx.beginPath();
+            ctx.arc(sx, sy, 1.2 * this.scale, 0, Math.PI * 2);
+            ctx.fillStyle = (i % 3 === 0) ? '#f59e0b' : '#331805';
+            ctx.fill();
+          }
+        }
+
+        ctx.restore();
+      }
+    }
+
+    // Dibujar el gatito bonito entregando el ramo en pantalla
+    function drawCuteCatDelivery(ctx, globalTime) {
+      if (currentPhase < 2) return;
+      
+      const catX = width * 0.5;
+      const catY = height - 70 + Math.sin(globalTime * 2) * 4;
+
+      ctx.save();
+      ctx.translate(catX, catY);
+
+      // Sombra del gato
+      ctx.beginPath();
+      ctx.ellipse(0, 52, 45, 12, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.fill();
+
+      // Cuerpo del gato (estilo ilustración tierna y elegante)
+      ctx.beginPath();
+      ctx.ellipse(0, 20, 28, 35, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#1c1917';
+      ctx.fill();
+
+      // Cabeza del gato
+      ctx.beginPath();
+      ctx.arc(0, -15, 26, 0, Math.PI * 2);
+      ctx.fillStyle = '#292524';
+      ctx.fill();
+
+      // Orejas
+      ctx.beginPath();
+      ctx.moveTo(-18, -32);
+      ctx.lineTo(-28, -50);
+      ctx.lineTo(-8, -38);
+      ctx.fillStyle = '#292524';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(18, -32);
+      ctx.lineTo(28, -50);
+      ctx.lineTo(8, -38);
+      ctx.fillStyle = '#292524';
+      ctx.fill();
+
+      // Interior orejas (rosita suave)
+      ctx.beginPath();
+      ctx.moveTo(-16, -34);
+      ctx.lineTo(-22, -44);
+      ctx.lineTo(-10, -38);
+      ctx.fillStyle = '#fbcfe8';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(16, -34);
+      ctx.lineTo(22, -44);
+      ctx.lineTo(10, -38);
+      ctx.fillStyle = '#fbcfe8';
+      ctx.fill();
+
+      // Ojos brillantes tiernos
+      ctx.beginPath();
+      ctx.arc(-9, -16, 3.5, 0, Math.PI * 2);
+      ctx.arc(9, -16, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#fde047';
+      ctx.fill();
+
+      // Nariz y boca
+      ctx.beginPath();
+      ctx.arc(0, -9, 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#f472b6';
+      ctx.fill();
+
+      // Manos sosteniendo un pequeño ramo/girasol de entrega
+      ctx.beginPath();
+      ctx.arc(-12, 12, 7, 0, Math.PI * 2);
+      ctx.arc(12, 12, 7, 0, Math.PI * 2);
+      ctx.fillStyle = '#292524';
+      ctx.fill();
+
+      // Mini ramo de girasol que sostiene en las patitas
+      ctx.save();
+      ctx.translate(0, 8);
+      ctx.rotate(Math.sin(globalTime * 3) * 0.08);
+      
+      // Tallo del mini ramo
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, 18);
+      ctx.strokeStyle = '#225222';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Flor del mini ramo
+      ctx.beginPath();
+      ctx.arc(0, -6, 12, 0, Math.PI * 2);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(0, -6, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#3d1d07';
+      ctx.fill();
+      ctx.restore();
+
+      ctx.restore();
+    }
+
+    function drawSunsetSky(ctx) {
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
+      skyGrad.addColorStop(0, '#1e0b1c');
+      skyGrad.addColorStop(0.25, '#4a1525');
+      skyGrad.addColorStop(0.55, '#9a2b12');
+      skyGrad.addColorStop(0.78, '#f59e0b');
+      skyGrad.addColorStop(1, '#fef08a');
+
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      const sunX = width * 0.5;
+      const sunY = height * 0.56;
+
+      const sunGlow = ctx.createRadialGradient(sunX, sunY, 10, sunX, sunY, Math.max(width, height) * 0.6);
+      sunGlow.addColorStop(0, 'rgba(254, 240, 138, 0.9)');
+      sunGlow.addColorStop(0.2, 'rgba(251, 191, 36, 0.5)');
+      sunGlow.addColorStop(0.5, 'rgba(234, 88, 12, 0.2)');
+      sunGlow.addColorStop(1, 'transparent');
+
+      ctx.fillStyle = sunGlow;
+      ctx.fillRect(0, 0, width, height);
+
+      // Sun Disc
+      ctx.beginPath();
+      ctx.arc(sunX, sunY, 48, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#fde047';
+      ctx.shadowBlur = 40;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Sunset Clouds
+      ctx.fillStyle = 'rgba(124, 45, 18, 0.22)';
+      for (let i = 0; i < 5; i++) {
+        const cy = height * 0.15 + i * 50;
+        const cx = (width * 0.2 + i * 180 + animationTime * 10) % (width + 300) - 150;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, 160 + i * 30, 18, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function initParticlesAndButterflies() {
+      pollenParticles = [];
+      for (let i = 0; i < 65; i++) {
+        pollenParticles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          radius: Math.random() * 2.2 + 0.8,
+          vx: (Math.random() - 0.5) * 0.4,
+          vy: -Math.random() * 0.6 - 0.2,
+          alpha: Math.random() * 0.7 + 0.3
+        });
+      }
+
+      butterflies = [];
+      const butterflyColors = ['monarch', 'gold', 'lavender', 'blue', 'monarch', 'gold'];
+      for (let i = 0; i < 7; i++) {
+        const bx = Math.random() * width;
+        const by = height * 0.38 + Math.random() * (height * 0.4);
+        const bScale = 0.7 + Math.random() * 0.5;
+        const bColor = butterflyColors[i % butterflyColors.length];
+        butterflies.push(new Butterfly(bx, by, bScale, bColor));
+      }
+    }
+
+    function drawPollen(ctx) {
+      pollenParticles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (p.y < -10) p.y = height + 10;
+        if (p.x < -10) p.x = width + 10;
+        if (p.x > width + 10) p.x = -10;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(253, 224, 71, ${p.alpha})`;
+        ctx.fill();
+      });
+    }
+
+    function drawRollingHills(ctx) {
+      // Hill 1
+      const hillGrad1 = ctx.createLinearGradient(0, height * 0.55, 0, height);
+      hillGrad1.addColorStop(0, '#2e1909');
+      hillGrad1.addColorStop(1, '#170c04');
+
+      ctx.beginPath();
+      ctx.moveTo(0, height);
+      ctx.quadraticCurveTo(width * 0.35, height * 0.52, width * 0.7, height * 0.56);
+      ctx.quadraticCurveTo(width * 0.85, height * 0.58, width, height * 0.54);
+      ctx.lineTo(width, height);
+      ctx.fillStyle = hillGrad1;
+      ctx.fill();
+
+      // Hill 2
+      const hillGrad2 = ctx.createLinearGradient(0, height * 0.62, 0, height);
+      hillGrad2.addColorStop(0, '#1f2e14');
+      hillGrad2.addColorStop(1, '#0b1407');
+
+      ctx.beginPath();
+      ctx.moveTo(0, height);
+      ctx.quadraticCurveTo(width * 0.2, height * 0.64, width * 0.5, height * 0.61);
+      ctx.quadraticCurveTo(width * 0.8, height * 0.58, width, height * 0.63);
+      ctx.lineTo(width, height);
+      ctx.fillStyle = hillGrad2;
+      ctx.fill();
+    }
+
+    function initHorizonClusters() {
+      horizonBloomClusters = [];
+      const count = Math.floor(width / 4);
+      for (let i = 0; i < count; i++) {
+        horizonBloomClusters.push({
+          x: (i / count) * width + (Math.random() - 0.5) * 8,
+          y: height * 0.55 + Math.sin(i * 0.2) * 12 + (Math.random() - 0.5) * 6,
+          radius: Math.random() * 3.2 + 1.5,
+          color: (Math.random() > 0.3) ? '#f59e0b' : '#fef08a'
+        });
+      }
+    }
+
+    function drawHorizonClusters(ctx, fieldProgress) {
+      if (fieldProgress <= 0) return;
+      const visibleCount = Math.floor(horizonBloomClusters.length * Math.min(1, fieldProgress * 1.2));
+
+      for (let i = 0; i < visibleCount; i++) {
+        const c = horizonBloomClusters[i];
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+        ctx.fillStyle = c.color;
+        ctx.fill();
+      }
+    }
+
+    function generateDenseField() {
+      initHorizonClusters();
+      initGrassBlades();
+      fieldSunflowers = [];
+
+      const heroH = Math.min(height * 0.52, 410);
+      heroSunflower = new Sunflower(width * 0.5, height - 20, heroH, 1.0, true, 0);
+
+      const count = Math.floor(Math.max(65, width / 11));
+
+      for (let i = 0; i < count; i++) {
+        const xRatio = (i + 0.5) / count + (Math.random() - 0.5) * 0.05;
+        const sx = Math.min(width - 15, Math.max(15, xRatio * width));
+
+        if (Math.abs(sx - width * 0.5) < 65) continue;
+
+        const depth = Math.random();
+        const scale = 0.22 + depth * 0.68;
+        const sy = height - 15 - (1 - depth) * (height * 0.28);
+        
+        const heightMultiplier = 0.75 + Math.random() * 0.45;
+        const targetH = scale * (height * 0.48) * heightMultiplier;
+
+        const distFromCenter = Math.abs(sx - width * 0.5) / (width * 0.5);
+        const delay = 2.0 + distFromCenter * 3.5 + (1 - depth) * 2.0 + Math.random() * 1.5;
+
+        fieldSunflowers.push(new Sunflower(sx, sy, targetH, scale, false, delay));
+      }
+
+      fieldSunflowers.sort((a, b) => a.scale - b.scale);
+    }
+
+    /* Planting new sunflowers on tap/click */
+    function plantCustomSunflower(x, y) {
+      if (currentPhase < 3) return;
+
+      const relativeY = Math.max(height * 0.55, Math.min(height, y));
+      const depth = (relativeY - height * 0.55) / (height * 0.45);
+      const scale = Math.max(0.3, Math.min(1.1, 0.25 + depth * 0.75));
+      const targetH = scale * (height * 0.48) * (0.85 + Math.random() * 0.3);
+
+      const newFlower = new Sunflower(x, relativeY, targetH, scale, false, 0);
+      fieldSunflowers.push(newFlower);
+      fieldSunflowers.sort((a, b) => a.scale - b.scale);
+    }
+
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      plantCustomSunflower(x, y);
     });
-  }
-}
 
-function drawExplosion(dt){
-  // brillo blanco/amarillo que cubre la pantalla
-  const elapsed=(performance.now()-startTime)/1000;
-  const glow=Math.max(0,1-Math.max(0,elapsed-.2)/1.3);
-  ctx.fillStyle="rgba(255,248,200,"+(glow*.55)+")";
-  ctx.fillRect(0,0,W,H);
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length > 0) {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.touches[0].clientX - rect.left;
+        const y = e.touches[0].clientY - rect.top;
+        plantCustomSunflower(x, y);
+      }
+    }, { passive: true });
 
-  for(let i=particles.length-1;i>=0;i--){
-    const q=particles[i];
-    q.x+=q.vx; q.y+=q.vy; q.vy+=.01;
-    q.life-=dt;
-    if(q.life<=0){particles.splice(i,1);continue}
-    const alpha=Math.min(1,q.life);
-    ctx.globalAlpha=alpha;
-    if(q.type==="star") star(q.x,q.y,q.size,q.rot);
-    else flower(q.x,q.y,q.size*.75);
-  }
-  ctx.globalAlpha=1;
-}
+    let lastTimestamp = 0;
 
-let clock=0,last=performance.now();
+    function animate(timestamp) {
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      const dt = Math.min(0.05, (timestamp - lastTimestamp) / 1000);
+      lastTimestamp = timestamp;
 
-function loop(now){
-  const dt=Math.min(.035,(now-last)/1000);last=now;clock+=dt;
-  bg();
+      animationTime += dt;
+      const phaseElapsed = (timestamp - phaseStartTime) / 1000;
 
-  if(state==="ready"){
-    cat(false,clock);
-  }else if(state==="exploding"){
-    drawExplosion(dt);
-    if((now-startTime)/1000>1.45){
-      state="finished";
-      startTime=now;
-      particles=[];
+      // PHASE MANAGEMENT
+      if (currentPhase === 2) {
+        heroSunflower.update(dt, phaseElapsed);
+        if (heroSunflower.petalProgress >= 0.95 && phaseElapsed > 5.5) {
+          currentPhase = 3;
+        }
+      } else if (currentPhase === 3) {
+        heroSunflower.update(dt, phaseElapsed + 6);
+        fieldSunflowers.forEach(s => s.update(dt, phaseElapsed));
+
+        if (phaseElapsed > 10.5) {
+          currentPhase = 4;
+          showBottomHud();
+        }
+      } else if (currentPhase === 4) {
+        heroSunflower.update(dt, phaseElapsed + 15);
+        fieldSunflowers.forEach(s => s.update(dt, phaseElapsed + 10));
+      }
+
+      if (currentPhase >= 2) {
+        butterflies.forEach(b => b.update(dt));
+      }
+
+      // RENDER
+      ctx.clearRect(0, 0, width, height);
+
+      // 1. Sky & Sun
+      drawSunsetSky(ctx);
+
+      // 2. Rolling Hills
+      drawRollingHills(ctx);
+
+      // 3. Horizon Clusters
+      const waveProgress = currentPhase >= 3 ? Math.min(1, phaseElapsed / 5) : (currentPhase >= 2 ? 0.2 : 0);
+      drawHorizonClusters(ctx, waveProgress);
+
+      // 4. Grass
+      const grassGrowth = currentPhase >= 2 ? Math.min(1, phaseElapsed / 3) : 0.8;
+      drawGrassBlades(ctx, animationTime, grassGrowth);
+
+      // 5. Sunflowers
+      fieldSunflowers
+        .filter(s => s.scale < 0.6)
+        .forEach(s => s.draw(ctx, animationTime));
+
+      fieldSunflowers
+        .filter(s => s.scale >= 0.6)
+        .forEach(s => s.draw(ctx, animationTime));
+
+      if (heroSunflower) {
+        heroSunflower.draw(ctx, animationTime);
+      }
+
+      // 5.5 Cute Cat Delivery
+      drawCuteCatDelivery(ctx, animationTime);
+
+      // 6. Butterflies
+      if (currentPhase >= 2) {
+        butterflies.forEach(b => b.draw(ctx));
+      }
+
+      // 7. Pollen
+      drawPollen(ctx);
+
+      requestAnimationFrame(animate);
     }
-  }else if(state==="finished"){
-    const t=(now-startTime)/1000;
-    const front=Math.min(1,Math.max(0,(t-.05)/1.15));
-    cat(front,clock);
-    if(front>.92){
-      title.textContent="Feliz dia Nicole✨🌻";
-      instruction.textContent="Un abrazo";
-      title.style.opacity="1";
-      instruction.style.opacity=".65";
-      again.classList.add("show");
+
+    function startExperience() {
+      // Safely start audio
+      try {
+        toggleAudio();
+      } catch(e) {
+        console.warn("Audio skipped on start:", e);
+      }
+
+      const intro = document.getElementById('introScreen');
+      const transition = document.getElementById('transitionScreen');
+
+      // 1. Fade out intro card
+      if (intro) {
+        intro.style.opacity = '0';
+        intro.style.pointerEvents = 'none';
+      }
+
+      // 2. Show transition message
+      setTimeout(() => {
+        if (transition) {
+          transition.style.opacity = '1';
+          transition.style.pointerEvents = 'auto';
+        }
+
+        // 3. Reveal canvas sunflower bloom phase
+        setTimeout(() => {
+          if (transition) {
+            transition.style.opacity = '0';
+            transition.style.pointerEvents = 'none';
+          }
+          const hud = document.getElementById('hudControls');
+          if (hud) {
+            hud.style.opacity = '1';
+            hud.style.pointerEvents = 'auto';
+          }
+
+          currentPhase = 2; // Trigger hero growth
+          phaseStartTime = performance.now();
+        }, 2800);
+      }, 600);
     }
-  }
-  requestAnimationFrame(loop);
-}
 
-function beginFeed(){
-  if(state!=="ready")return;
-  state="exploding";
-  startTime=performance.now();
-  food.classList.add("hidden");
-  title.style.opacity="0";
-  instruction.style.opacity="0";
-  makeExplosion();
-}
+    // Attach listeners directly to "Ver el detalle" button for multi-device reliability
+    const startBtn = document.getElementById('startBtn');
+    if (startBtn) {
+      startBtn.addEventListener('click', startExperience);
+      startBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        startExperience();
+      });
+    }
 
-let dragging=false;
+    function showBottomHud() {
+      const bottomHud = document.getElementById('bottomHud');
+      if (bottomHud) {
+        bottomHud.style.opacity = '1';
+        bottomHud.style.pointerEvents = 'auto';
+      }
+    }
 
-food.addEventListener("pointerdown",e=>{
-  if(state!=="ready")return;
-  dragging=true;
-  food.classList.add("dragging");
-  food.setPointerCapture(e.pointerId);
-  moveFood(e);
-});
+    function openFinalModal() {
+      const finalScreen = document.getElementById('finalScreen');
+      if (finalScreen) {
+        finalScreen.style.opacity = '1';
+        finalScreen.style.pointerEvents = 'auto';
+      }
+    }
 
-food.addEventListener("pointermove",e=>{
-  if(!dragging)return;
-  moveFood(e);
-});
+    function closeFinalModal() {
+      const finalScreen = document.getElementById('finalScreen');
+      if (finalScreen) {
+        finalScreen.style.opacity = '0';
+        finalScreen.style.pointerEvents = 'none';
+      }
+    }
 
-food.addEventListener("pointerup",e=>{
-  if(!dragging)return;
-  moveFood(e);
-  dragging=false;
-  food.classList.remove("dragging");
-  checkFood();
-});
-
-food.addEventListener("pointercancel",()=>{
-  dragging=false;
-  food.classList.remove("dragging");
-});
-
-function moveFood(e){
-  foodX=e.clientX;foodY=e.clientY;
-  food.style.left=(foodX-41)+"px";
-  food.style.top=(foodY-41)+"px";
-}
-
-function checkFood(){
-  const gx=W*.5,gy=H*.58;
-  if(Math.hypot(foodX-gx,foodY-gy)<135) beginFeed();
-  else placeFood();
-}
-
-again.addEventListener("click",()=>{
-  state="ready";
-  particles=[];
-  title.textContent="Alimenta al gato 🐾";
-  instruction.textContent="Arrastra la comida hasta él";
-  title.style.opacity="1";
-  instruction.style.opacity=".65";
-  again.classList.remove("show");
-  food.classList.remove("hidden");
-  placeFood();
-});
-
-resize();
-placeFood();
-requestAnimationFrame(loop);
-})();
-</script>
+    /* Initialize application on load */
+    window.onload = function() {
+      resizeCanvas();
+      initParticlesAndButterflies();
+      generateDenseField();
+      requestAnimationFrame(animate);
+    };
+  </script>
 </body>
 </html>
